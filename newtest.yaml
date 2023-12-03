@@ -1,0 +1,20 @@
+- name: Get the task done
+  hosts: localhost
+  become: yes
+  
+
+  tasks:
+
+    - name: Define AWS access key ID
+      set_fact:
+        aws_access_key_id: AKIA3NPIDKHNISQ2O464
+    - name: Define AWS secret access key
+      set_fact:
+        aws_secret_access_key: /93Tbb54+l7LHRnoB0ZMtwrsxOvCoOFQ6piHqxdz
+
+    - name: Create or update key/value pair in AWS SSM parameter store
+      community.aws.ssm_parameter:
+       name: "Hello"
+       region: ap-south-1
+       description: "This is your first key"
+       value: "World"
