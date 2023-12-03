@@ -7,10 +7,10 @@
 
     - name: Define AWS access key ID
       set_fact:
-        aws_access_key_id: AKIA3NPIDKHNISQ2O464
+        aws_access_key_id: 
     - name: Define AWS secret access key
       set_fact:
-        aws_secret_access_key: /93Tbb54+l7LHRnoB0ZMtwrsxOvCoOFQ6piHqxdz
+        aws_secret_access_key: 
 
     - name: Create or update key/value pair in AWS SSM parameter store
       community.aws.ssm_parameter:
