@@ -1,0 +1,94 @@
+- name: Deploy SSL Certificate on Ubuntu Apache Instances
+  hosts: all
+  become: yes
+  vars:
+    file1: koupn.crt 
+    file2: koupn.sf_crt
+    file3: koupn.key 
+    ansible_python_interpreter: /usr/bin/python3 
+    aws_region: "us-west-2"
+    certificates_path: /usr/local/apache2/certificates
+    certificate_files:
+      - koupn.crt
+      - koupn.sf_crt
+      - koupn.key
+  
+  tasks:
+
+    - name: Ensure pip installed 
+      package:
+       name: python3-pip
+       state: present
+
+    - name: Install boto, boto3 and botocore
+      pip:
+         name: "{{ item }}"
+      loop:
+        - boto
+        - boto3
+        - botocore
+
+    - name: Check apache2 exist or not 
+      stat:
+        path: /etc/apache2
+      register: apache2_exist
+
+    - name: Install apache2 if not exist
+      apt:
+       name: apache2
+       state: present
+
+    - name: Display Apache2 exist 
+      debug:
+        var: apache2_exist.stat.exists
+
+    - name: Start apache2 service
+      service:
+        name: apache2
+        state: started
+    
+    - name: Fetch the Values from AWS SSM Parameter 1
+      set_fact:
+       ssm_parameter_value1: "{{ lookup('amazon.aws.aws_ssm', file1, region=aws_region) }}"
+
+    - name: Fetch the Values from AWS SSM Parameter 2
+      set_fact:
+       ssm_parameter_value2: "{{ lookup('amazon.aws.aws_ssm', file2, region=aws_region) }}"
+
+    - name: Fetch the Values from AWS SSM Parameter 3
+      set_fact:
+       ssm_parameter_value3: "{{ lookup('amazon.aws.aws_ssm', file3, region=aws_region) }}"
+
+    - name: Check if certificate files exist 
+      stat:
+       path: "{{ certificates_path }}/{{ item }}"
+      register: file_existence
+      loop: "{{ certificate_files }}"
+
+    - name: Create certificate files if not exist
+      file:
+        path: "{{ certificates_path }}/{{ item.item }}"
+        state: touch
+        mode: '0644'
+      when: not item.stat.exists
+      loop: "{{ file_existence.results }}"
+
+    - name: Copy SSM Parameter value from {{ file1 }} 
+      copy:
+       content: "{{ ssm_parameter_value1 }}"
+       dest: /usr/local/apache2/certificates/{{ file1 }} 
+
+    - name: Copy SSM Parameter value from {{ file2 }} 
+      copy:
+       content: "{{ ssm_parameter_value2 }}"
+       dest: /usr/local/apache2/certificates/{{ file2 }} 
+  
+    - name: Copy SSM Parameter value from {{ file3 }} 
+      copy:
+       content: "{{ ssm_parameter_value3 }}"
+       dest: /usr/local/apache2/certificates/{{ file3 }} 
+
+    - name: Restart apache2 service
+      service:
+        name: apache2
+        state: restarted
